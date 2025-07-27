@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os, requests
 
@@ -14,12 +14,22 @@ def get_events():
         return jsonify({"error": "Missing TICKETMASTER_API_KEY"}), 500
 
     params = {"apikey": TICKETMASTER_API_KEY, "size": 20, "countryCode": "US"}
-    for p in ("start", "end", "classificationName", "city"):
-        v = request.args.get(p)
-        if v:
-            # Ticketmaster expects ISO8601 with Z
-            key = {"start": "startDateTime", "end": "endDateTime"}.get(p, p)
-            params[key] = v
+
+    city = request.args.get("city")
+    if city:
+        params["city"] = city
+
+    start = request.args.get("start")
+    if start:
+        params["startDateTime"] = start
+
+    end = request.args.get("end")
+    if end:
+        params["endDateTime"] = end
+
+    className = request.args.get("classificationName")
+    if className:
+        params["classificationName"] = className
 
     resp = requests.get(BASE, params=params)
     return jsonify(resp.json()) if resp.ok else jsonify({"error": resp.text}), resp.status_code
