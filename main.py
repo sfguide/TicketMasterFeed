@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Use environment variable or hardcode your TM API key
-TM_API_KEY = os.environ.get("TM_API_KEY") or "YOUR_TICKETMASTER_API_KEY"
+TM_API_KEY = os.environ.get("TICKETMASTER_API_KEY") or "YOUR_TICKETMASTER_API_KEY"
 
 @app.route("/")
 def home():
