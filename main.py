@@ -6,36 +6,38 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# Use environment variable or hardcode your TM API key
-TM_API_KEY = os.environ.get("TICKETMASTER_API_KEY") or "YOUR_TICKETMASTER_API_KEY"
+TICKETMASTER_API_KEY = os.getenv("TICKETMASTER_API_KEY")
+BASE_URL = "https://app.ticketmaster.com/discovery/v2/events.json"
 
 @app.route("/")
 def home():
     return "Ticketmaster proxy is running."
 
 @app.route("/events")
-def get_events():
-    base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
+def events():
+    city = request.args.get("city")
+    start = request.args.get("startDateTime")
+    end = request.args.get("endDateTime")
+    classification = request.args.get("classificationName")
 
     params = {
-        "apikey": TM_API_KEY,
-        "city": request.args.get("city"),
-        "classificationName": request.args.get("classificationName"),
-        "startDateTime": request.args.get("start"),
-        "endDateTime": request.args.get("end"),
-        "sort": request.args.get("sort")
+        "apikey": TICKETMASTER_API_KEY,
+        "size": 30,
+        "sort": "date,asc"
     }
 
-    # Remove any None values so they don't mess up the request
-    filtered_params = {k: v for k, v in params.items() if v}
+    if city:
+        params["city"] = city
+    if start:
+        params["startDateTime"] = start
+    if end:
+        params["endDateTime"] = end
+    if classification:
+        params["classificationName"] = classification
 
     try:
-        response = requests.get(base_url, params=filtered_params)
-        data = response.json()
-        print("Proxy forwarded params:", filtered_params)
-        return jsonify(data)
-    except Exception as e:
+        response = requests.get(BASE_URL, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(debug=True)
