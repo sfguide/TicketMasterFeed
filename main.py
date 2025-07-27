@@ -15,16 +15,17 @@ def home():
 
 @app.route("/events")
 def events():
-    city = request.args.get("city")
-    start = request.args.get("startDateTime")
-    end = request.args.get("endDateTime")
-    classification = request.args.get("classificationName")
-
     params = {
         "apikey": TICKETMASTER_API_KEY,
         "size": 30,
         "sort": "date,asc"
     }
+
+    # Optional filters
+    city = request.args.get("city")
+    start = request.args.get("startDateTime")
+    end = request.args.get("endDateTime")
+    classification = request.args.get("classificationName")
 
     if city:
         params["city"] = city
@@ -34,6 +35,8 @@ def events():
         params["endDateTime"] = end
     if classification:
         params["classificationName"] = classification
+
+    print("➡️ Ticketmaster API Request Params:", params)
 
     try:
         response = requests.get(BASE_URL, params=params)
