@@ -20,17 +20,24 @@ def get_events():
 
     params = {
         "apikey": TICKETMASTER_API_KEY,
-        "size": 10,
+        "size": 50,
         "countryCode": "US",
-        "city": "Sarasota",
+        "city": os.getenv("EVENT_CITY", "Sarasota"),
         "sort": "date,asc"
     }
+    # Example filtering parameters
+    start = request.args.get("start")  # e.g. "2025-08-01T00:00:00Z"
+    end   = request.args.get("end")    # e.g. "2025-08-31T23:59:59Z"
+    className = request.args.get("classificationName")  # e.g. "music"
 
-    try:
-        response = requests.get(TICKETMASTER_BASE_URL, params=params)
-        if response.ok:
-            return jsonify(response.json())
-        else:
-            return jsonify({"error": response.text}), response.status_code
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if start:
+        params["startDateTime"] = start
+    if end:
+        params["endDateTime"] = end
+    if className:
+        params["classificationName"] = className
+
+    response = requests.get(TICKETMASTER_BASE_URL, params=params)
+    if response.ok:
+        return jsonify(response.json())
+    return jsonify({"error": response.text}), response.status_code
