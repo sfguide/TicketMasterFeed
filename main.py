@@ -1,35 +1,41 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import os, requests
+import requests
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-TICKETMASTER_API_KEY = os.getenv("TICKETMASTER_API_KEY")
-BASE = "https://app.ticketmaster.com/discovery/v2/events.json"
+# Use environment variable or hardcode your TM API key
+TM_API_KEY = os.environ.get("TM_API_KEY") or "YOUR_TICKETMASTER_API_KEY"
+
+@app.route("/")
+def home():
+    return "Ticketmaster proxy is running."
 
 @app.route("/events")
 def get_events():
-    if not TICKETMASTER_API_KEY:
-        return jsonify({"error": "Missing TICKETMASTER_API_KEY"}), 500
+    base_url = "https://app.ticketmaster.com/discovery/v2/events.json"
 
-    params = {"apikey": TICKETMASTER_API_KEY, "size": 20, "countryCode": "US"}
+    params = {
+        "apikey": TM_API_KEY,
+        "city": request.args.get("city"),
+        "classificationName": request.args.get("classificationName"),
+        "startDateTime": request.args.get("start"),
+        "endDateTime": request.args.get("end"),
+        "sort": request.args.get("sort")
+    }
 
-    city = request.args.get("city")
-    if city:
-        params["city"] = city
+    # Remove any None values so they don't mess up the request
+    filtered_params = {k: v for k, v in params.items() if v}
 
-    start = request.args.get("start")
-    if start:
-        params["startDateTime"] = start
+    try:
+        response = requests.get(base_url, params=filtered_params)
+        data = response.json()
+        print("Proxy forwarded params:", filtered_params)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    end = request.args.get("end")
-    if end:
-        params["endDateTime"] = end
-
-    className = request.args.get("classificationName")
-    if className:
-        params["classificationName"] = className
-
-    resp = requests.get(BASE, params=params)
-    return jsonify(resp.json()) if resp.ok else jsonify({"error": resp.text}), resp.status_code
+if __name__ == "__main__":
+    app.run(debug=True)
